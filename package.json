@@ -1,5 +1,5 @@
 {
-  "name": "realtime-clock",
+  "name": "realtime.clock",
   "version": "1.0.0",
   "description": "Real-time clock display with server synchronization for UTC+8 timezone",
   "main": "index.html",
