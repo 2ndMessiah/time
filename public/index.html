@@ -201,9 +201,9 @@
                 const now = new Date();
                 const adjustedTime = new Date(now.getTime() + this.serverTimeOffset);
                 
-                // 确保是 UTC+8 时间
-                const utc = adjustedTime.getTime() + (adjustedTime.getTimezoneOffset() * 60000);
-                return new Date(utc + (8 * 3600000));
+                // 直接返回调整后的时间，不再手动转换时区
+                // 因为服务器已经返回的是 UTC+8 时间
+                return adjustedTime;
             }
 
             formatTime(date) {

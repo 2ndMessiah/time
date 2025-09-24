@@ -26,9 +26,8 @@ export default async function handler(req, res) {
   try {
     const now = new Date();
     
-    // 获取 UTC+8 时间
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const chinaTime = new Date(utc + (8 * 3600000));
+    // 直接使用 JavaScript 的时区转换，更准确
+    const chinaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
     
     const response = {
       success: true,
