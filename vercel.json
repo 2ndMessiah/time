@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "realtime-clock",
+  "name": "realtime.clock",
   "functions": {
     "api/time.js": {
       "maxDuration": 10
