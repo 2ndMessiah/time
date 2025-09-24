@@ -60,13 +60,6 @@
         .timezone-info {
             font-size: 1.1rem;
             opacity: 0.8;
-            margin-bottom: 1rem;
-        }
-
-        .milliseconds {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            font-family: 'Courier New', monospace;
         }
 
         .sync-status {
@@ -128,7 +121,6 @@
         <div class="time-display" id="timeDisplay" style="display: none;"></div>
         <div class="date-display" id="dateDisplay" style="display: none;"></div>
         <div class="timezone-info" style="display: none;" id="timezoneInfo">中国标准时间 (UTC+8)</div>
-        <div class="milliseconds" id="milliseconds" style="display: none;"></div>
     </div>
 
     <script>
@@ -142,7 +134,6 @@
                 this.timeDisplay = document.getElementById('timeDisplay');
                 this.dateDisplay = document.getElementById('dateDisplay');
                 this.timezoneInfo = document.getElementById('timezoneInfo');
-                this.milliseconds = document.getElementById('milliseconds');
                 this.loading = document.getElementById('loading');
                 this.syncStatus = document.getElementById('syncStatus');
                 this.syncIndicator = document.getElementById('syncIndicator');
@@ -233,17 +224,11 @@
                 return `${year}年${month}月${day}日 ${weekday}`;
             }
 
-            formatMilliseconds(date) {
-                const ms = date.getMilliseconds().toString().padStart(3, '0');
-                return `毫秒: ${ms}`;
-            }
-
             updateDisplay() {
                 const currentTime = this.getCurrentTime();
                 
                 this.timeDisplay.textContent = this.formatTime(currentTime);
                 this.dateDisplay.textContent = this.formatDate(currentTime);
-                this.milliseconds.textContent = this.formatMilliseconds(currentTime);
             }
 
             startClock() {
@@ -252,7 +237,6 @@
                 this.timeDisplay.style.display = 'block';
                 this.dateDisplay.style.display = 'block';
                 this.timezoneInfo.style.display = 'block';
-                this.milliseconds.style.display = 'block';
 
                 // 立即更新一次
                 this.updateDisplay();
