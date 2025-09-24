@@ -24,28 +24,16 @@ export default async function handler(req, res) {
   }
   
   try {
+    // 直接使用服务器当前时间，不做时区转换
+    // 让前端根据用户的本地时区显示
     const now = new Date();
-    
-    // 直接使用 JavaScript 的时区转换，更准确
-    const chinaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
     
     const response = {
       success: true,
-      timestamp: chinaTime.toISOString(),
-      timezone: 'Asia/Shanghai',
-      utc_offset: '+08:00',
-      unix_timestamp: Math.floor(chinaTime.getTime() / 1000),
-      milliseconds: chinaTime.getMilliseconds(),
-      local_time: chinaTime.toLocaleString('zh-CN', {
-        timeZone: 'Asia/Shanghai',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }),
+      timestamp: now.toISOString(),
+      timezone: 'Server Time',
       server_time: now.toISOString(),
+      unix_timestamp: Math.floor(now.getTime() / 1000),
       server_timezone: process.env.TZ || 'UTC'
     };
     

@@ -198,12 +198,9 @@
             }
 
             getCurrentTime() {
+                // 如果你本地就是 UTC+8，直接使用本地时间加上服务器偏移
                 const now = new Date();
-                const adjustedTime = new Date(now.getTime() + this.serverTimeOffset);
-                
-                // 直接返回调整后的时间，不再手动转换时区
-                // 因为服务器已经返回的是 UTC+8 时间
-                return adjustedTime;
+                return new Date(now.getTime() + this.serverTimeOffset);
             }
 
             formatTime(date) {
