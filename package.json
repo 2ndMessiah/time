@@ -2,11 +2,13 @@
   "name": "realtime.clock",
   "version": "1.0.0",
   "description": "Real-time clock display with server synchronization for UTC+8 timezone",
+  "type": "module",
   "main": "index.html",
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'No build step required for static site'",
-    "start": "vercel dev --listen 3000"
+    "start": "vercel dev --listen 3000",
+    "deploy": "vercel --prod"
   },
   "keywords": [
     "clock",
