@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时时间 - UTC+8</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            animation: fadeIn 1s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .time-display {
+            font-size: clamp(3rem, 8vw, 8rem);
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .date-display {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-weight: 400;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .timezone-info {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        .milliseconds {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            font-family: 'Courier New', monospace;
+        }
+
+        .sync-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sync-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .sync-indicator.error {
+            background: #f44336;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            .sync-status {
+                position: static;
+                margin-top: 1rem;
+                justify-content: center;
+            }
+        }
+
+        .loading {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="sync-status">
+        <div class="sync-indicator" id="syncIndicator"></div>
+        <span id="syncStatus">同步中...</span>
+    </div>
+
+    <div class="container">
+        <div class="loading" id="loading">正在获取服务器时间...</div>
+        <div class="time-display" id="timeDisplay" style="display: none;"></div>
+        <div class="date-display" id="dateDisplay" style="display: none;"></div>
+        <div class="timezone-info" style="display: none;" id="timezoneInfo">中国标准时间 (UTC+8)</div>
+        <div class="milliseconds" id="milliseconds" style="display: none;"></div>
+    </div>
+
+    <script>
+        class RealtimeClock {
+            constructor() {
+                this.serverTimeOffset = 0;
+                this.lastSyncTime = 0;
+                this.syncInterval = 30000; // 30秒同步一次
+                this.isOnline = true;
+                
+                this.timeDisplay = document.getElementById('timeDisplay');
+                this.dateDisplay = document.getElementById('dateDisplay');
+                this.timezoneInfo = document.getElementById('timezoneInfo');
+                this.milliseconds = document.getElementById('milliseconds');
+                this.loading = document.getElementById('loading');
+                this.syncStatus = document.getElementById('syncStatus');
+                this.syncIndicator = document.getElementById('syncIndicator');
+
+                this.init();
+            }
+
+            async init() {
+                await this.syncWithServer();
+                this.startClock();
+                this.startPeriodicSync();
+                this.setupNetworkDetection();
+            }
+
+            async syncWithServer() {
+                try {
+                    const startTime = performance.now();
+                    
+                    // 使用多个时间 API 来确保准确性
+                    const response = await fetch('/api/time', {
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    }).catch(() => {
+                        // 如果自定义 API 不存在，使用世界时间 API
+                        return fetch('https://worldtimeapi.org/api/timezone/Asia/Shanghai');
+                    });
+
+                    const endTime = performance.now();
+                    const networkDelay = (endTime - startTime) / 2; // 估算网络延迟
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        let serverTime;
+                        if (data.datetime) {
+                            // WorldTimeAPI 格式
+                            serverTime = new Date(data.datetime);
+                        } else if (data.timestamp) {
+                            // 自定义 API 格式
+                            serverTime = new Date(data.timestamp);
+                        } else {
+                            throw new Error('Invalid time format');
+                        }
+                        
+                        // 补偿网络延迟
+                        serverTime.setMilliseconds(serverTime.getMilliseconds() + networkDelay);
+                        
+                        const localTime = new Date();
+                        this.serverTimeOffset = serverTime.getTime() - localTime.getTime();
+                        this.lastSyncTime = performance.now();
+                        
+                        this.updateSyncStatus('已同步', false);
+                        console.log(`时间同步完成，偏移: ${this.serverTimeOffset}ms，网络延迟: ${networkDelay.toFixed(1)}ms`);
+                    }
+                } catch (error) {
+                    console.warn('服务器时间同步失败，使用本地时间:', error);
+                    this.serverTimeOffset = 0;
+                    this.updateSyncStatus('本地时间', true);
+                }
+            }
+
+            getCurrentTime() {
+                const now = new Date();
+                const adjustedTime = new Date(now.getTime() + this.serverTimeOffset);
+                
+                // 确保是 UTC+8 时间
+                const utc = adjustedTime.getTime() + (adjustedTime.getTimezoneOffset() * 60000);
+                return new Date(utc + (8 * 3600000));
+            }
+
+            formatTime(date) {
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                return `${hours}:${minutes}:${seconds}`;
+            }
+
+            formatDate(date) {
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                
+                const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                const weekday = weekdays[date.getDay()];
+                
+                return `${year}年${month}月${day}日 ${weekday}`;
+            }
+
+            formatMilliseconds(date) {
+                const ms = date.getMilliseconds().toString().padStart(3, '0');
+                return `毫秒: ${ms}`;
+            }
+
+            updateDisplay() {
+                const currentTime = this.getCurrentTime();
+                
+                this.timeDisplay.textContent = this.formatTime(currentTime);
+                this.dateDisplay.textContent = this.formatDate(currentTime);
+                this.milliseconds.textContent = this.formatMilliseconds(currentTime);
+            }
+
+            startClock() {
+                // 隐藏加载状态
+                this.loading.style.display = 'none';
+                this.timeDisplay.style.display = 'block';
+                this.dateDisplay.style.display = 'block';
+                this.timezoneInfo.style.display = 'block';
+                this.milliseconds.style.display = 'block';
+
+                // 立即更新一次
+                this.updateDisplay();
+
+                // 使用高精度定时器
+                const updateClock = () => {
+                    this.updateDisplay();
+                    requestAnimationFrame(updateClock);
+                };
+                
+                requestAnimationFrame(updateClock);
+            }
+
+            startPeriodicSync() {
+                setInterval(() => {
+                    if (this.isOnline) {
+                        this.syncWithServer();
+                    }
+                }, this.syncInterval);
+            }
+
+            setupNetworkDetection() {
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.syncWithServer();
+                });
+
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                    this.updateSyncStatus('离线', true);
+                });
+            }
+
+            updateSyncStatus(status, isError = false) {
+                this.syncStatus.textContent = status;
+                this.syncIndicator.className = isError ? 'sync-indicator error' : 'sync-indicator';
+            }
+        }
+
+        // 页面加载完成后启动时钟
+        document.addEventListener('DOMContentLoaded', () => {
+            new RealtimeClock();
+        });
+
+        // 页面可见性变化时重新同步
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // 页面重新可见时立即同步
+                setTimeout(() => {
+                    if (window.clockInstance) {
+                        window.clockInstance.syncWithServer();
+                    }
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
