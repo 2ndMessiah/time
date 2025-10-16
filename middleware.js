@@ -1,4 +1,19 @@
-<!DOCTYPE html>
+export const config = {
+  matcher: '/(.*)',
+};
+
+export default function middleware(request) {
+  const { pathname } = new URL(request.url);
+  const allowed = ['jp', 'cn', 'hk', 'us'];
+  const country = request.headers.get('x-vercel-ip-country')?.toLowerCase();
+
+  // Allow Vercel Analytics to work
+  if (pathname === '/_vercel/insights/script.js') {
+      return;
+  }
+
+  if (country && !allowed.includes(country)) {
+    return new Response(`<!DOCTYPE html>
 <html>
 <head>
 <title>Welcome to nginx!</title>
@@ -22,4 +37,13 @@ Commercial support is available at
 
 <p><em>Thank you for using nginx.</em></p>
 </body>
-</html>
+</html>`, {
+      status: 404,
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    });
+  }
+
+  return;
+}
