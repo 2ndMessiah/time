@@ -6,18 +6,10 @@
       "maxDuration": 10
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/time",
-      "dest": "/api/time.js"
-    },
-    {
-      "src": "/",
-      "dest": "/public/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
+      "source": "/api/time",
+      "destination": "/api/time.js"
     }
   ],
   "headers": [
