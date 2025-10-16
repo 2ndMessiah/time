@@ -4,7 +4,7 @@ export const config = {
 
 export default function middleware(request) {
   const { pathname } = new URL(request.url);
-  const allowed = ['jp', 'cn', 'hk', 'us'];
+  const allowed = ['jp', 'cn', 'hk', 'us','sg','kr'];
   const country = request.headers.get('x-vercel-ip-country')?.toLowerCase();
 
   // Allow Vercel Analytics to work
